@@ -63,6 +63,7 @@ class BaseHandler(RequestHandler):
                    exclude_hybrids: bool,
                    include_columns: list,
                    exclude_columns: list,
+                   presence_columns: list,
                    results_per_page: int,
                    max_results_per_page: int):
         """
@@ -107,8 +108,10 @@ class BaseHandler(RequestHandler):
 
         self.include = self.parse_columns(include_columns)
         self.exclude = self.parse_columns(exclude_columns)
+        self.presence = self.parse_columns(presence_columns)
 
-        self.to_dict_options = {'execute_queries': not exclude_queries, 'execute_hybrids': not exclude_hybrids}
+        self.to_dict_options = {'execute_queries': not exclude_queries,
+                                'execute_hybrids': not exclude_hybrids}
 
     def prepare(self):
         """
@@ -469,6 +472,7 @@ class BaseHandler(RequestHandler):
         result = self.post_single()
 
         self._call_postprocessor(result=result)
+
         self.finish(result)
 
     def post_single(self):
@@ -491,6 +495,7 @@ class BaseHandler(RequestHandler):
             # Refresh
             self.model.session.refresh(instance)
 
+            self._call_postprocessor(instance)
             # Set Status
             self.set_status(201, "Created")
 
@@ -793,6 +798,7 @@ class BaseHandler(RequestHandler):
         return to_dict(instance,
                        include=self.include,
                        exclude=self.exclude,
+                       presence=self.presence,
                        options=self.to_dict_options)
 
     def parse_pk(self, instance_id):

@@ -158,6 +158,7 @@ def to_filter(instance,
 
 def to_deep(include,
             exclude,
+            presence,
             key):
     """
         Extract the include/exclude information for key
@@ -178,13 +179,19 @@ def to_deep(include,
     except (TypeError, KeyError):
         rtn['exclude'] = None
 
+    try:
+        rtn['presence'] = presence.setdefault(key, False)
+    except AttributeError:
+        rtn['presence'] = False
+
     return rtn
 
 
 def to_dict(instance,
             options=collections.defaultdict(bool),
             include=None,
-            exclude=None):
+            exclude=None,
+            presence=None):
     """
         Translates sqlalchemy instance to dictionary
 
@@ -196,6 +203,7 @@ def to_dict(instance,
                           * execute_hybrids: Execute Hybrids
         :param include: Columns and Relations that should be included for an instance
         :param exclude: Columns and Relations that should not be included for an instance
+        :param presence: Columns and Relations that should not be presenced for an instance
     """
     if exclude is not None and include is not None:
         raise ValueError('Cannot specify both include and exclude.')
@@ -214,17 +222,26 @@ def to_dict(instance,
 
     # Any Dictionary
     if isinstance(instance, dict) or hasattr(instance, 'items'):
-        return {k: to_dict(v, options=options, **to_deep(include, exclude, k)) for k, v in instance.items()}
+        return {k: to_dict(v, options=options, **to_deep(include, exclude, presence, k)) for k, v in instance.items()}
 
     # Any List
     if isinstance(instance, list) or hasattr(instance, '__iter__'):
-        return [to_dict(x, options=options, include=include, exclude=exclude) for x in instance]
+        return [to_dict(x, options=options,
+                        include=include, exclude=exclude, presence=presence) for x in instance]
 
     # Include Columns given
     if isinstance(include, collections.Iterable):
         rtn = {}
         for column in include:
-            rtn[column] = to_dict(getattr(instance, column), **to_deep(include, exclude, column))
+            rtn[column] = to_dict(getattr(instance, column), **to_deep(include, exclude, presence, column))
+        return rtn
+
+
+    # Include Columns given
+    if isinstance(presence, collections.Iterable):
+        rtn = {}
+        for column in presence:
+            rtn[column] = to_dict(getattr(instance, column), **to_deep(include, exclude, presence, column))
         return rtn
 
     # Include all columns if it is a SQLAlchemy instance
@@ -249,7 +266,7 @@ def to_dict(instance,
             continue
 
         # Prevent unnec. db calls
-        if include is False and column not in hybrids and column not in columns:
+        if include is False and column not in hybrids and column not in columns and presence is False:
             continue
 
         if column not in instance.__dict__ and not options.get('execute_queries', True):
@@ -259,7 +276,7 @@ def to_dict(instance,
         # Get Attribute
         node = getattr(instance, column)
 
-        # Don't execute queries if stopping deepnes
+        # Don't execute queries if stopping deepens
         if include is False and isinstance(node, Query):
             continue
         # Otherwise query it
@@ -267,5 +284,5 @@ def to_dict(instance,
             node = node.all()
 
         # Convert it
-        rtn[column] = to_dict(node, **to_deep(include, exclude, column))
+        rtn[column] = to_dict(node, **to_deep(include, exclude, presence, column))
     return rtn

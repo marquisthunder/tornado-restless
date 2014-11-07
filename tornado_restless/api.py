@@ -53,6 +53,7 @@ class ApiManager(object):
                              exclude_hybrids: bool=False,
                              include_columns: list=None,
                              exclude_columns: list=None,
+                             presence_columns: list=None,
                              results_per_page: int=10,
                              max_results_per_page: int=100,
                              blueprint_prefix: str='',
@@ -71,6 +72,7 @@ class ApiManager(object):
         :param exclude_hybrids: When exclude_queries is True and exclude_hybrids is False, hybrids are still included.
         :param include_columns: Whitelist of columns to be included
         :param exclude_columns: Blacklist of columns to be excluded
+        :param presence_columns: Whitelist of columns to be presented
         :param results_per_page: The default value of how many results are returned per request
         :param max_results_per_page: The hard upper limit of resutest per page
         :param blueprint_prefix: The Prefix that will be used to unique collection_name for named_handlers
@@ -96,6 +98,7 @@ class ApiManager(object):
                   'validation_exceptions': validation_exceptions,
                   'include_columns': include_columns,
                   'exclude_columns': exclude_columns,
+                  'presence_columns': presence_columns,
                   'exclude_queries': exclude_queries,
                   'exclude_hybrids': exclude_hybrids,
                   'results_per_page': results_per_page,

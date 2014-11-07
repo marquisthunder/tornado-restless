@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # -*- coding: utf-8 -*-
 """
-    
+
 """
 from datetime import datetime
 from json import loads
@@ -263,7 +263,7 @@ class TestBase(object):
 
     def subsetOf(self, a, b):
         """
-            Test wether a is an subset of b (or b an superset of a)
+            Test whether a is an subset of b (or b an superset of a)
         """
 
         if type(a) != type(b):
