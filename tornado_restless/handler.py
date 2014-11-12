@@ -13,10 +13,11 @@ from math import ceil
 from traceback import print_exception
 from urllib.parse import parse_qs
 import sys
+import re
 import itertools
 
 from sqlalchemy import inspect as sqinspect
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.util import memoized_instancemethod, memoized_property
 from tornado.web import RequestHandler, HTTPError
@@ -29,6 +30,7 @@ from .wrapper import SessionedModelWrapper
 __author__ = 'Martin Martimeo <martin@martimeo.de>'
 __date__ = '26.04.13 - 22:09'
 
+errortype = re.compile(r"INSERT INTO (\w+)")
 
 class BaseHandler(RequestHandler):
     """
@@ -189,6 +191,12 @@ class BaseHandler(RequestHandler):
                 self.set_status(400, reason='SQLAlchemy: Unmapped Instance')
                 self.finish(dict(type=exc_type.__module__ + "." + exc_type.__name__,
                                  message="%s" % exc_value))
+            elif issubclass(exc_type, IntegrityError):
+                instype = errortype.findall(str(exc_value))
+                verbose = 'Item {} already exists'.format(instype)
+                self.set_status(400, reason='Item already Exists')
+                self.finish(dict(type=exc_type.__module__ + "." + exc_type.__name__,
+                                 message="%s" % verbose))
             elif issubclass(exc_type, SQLAlchemyError):
                 self.set_status(400, reason='SQLAlchemy: Bad Request')
                 self.finish(dict(type=exc_type.__module__ + "." + exc_type.__name__,
@@ -501,6 +509,9 @@ class BaseHandler(RequestHandler):
 
             # To Dict
             return self.to_dict(instance)
+        except IntegrityError:
+            self.send_error(status_code=400, exc_info=sys.exc_info())
+            self.model.session.rollback()
         except SQLAlchemyError:
             self.send_error(status_code=400, exc_info=sys.exc_info())
             self.model.session.rollback()
