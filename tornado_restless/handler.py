@@ -30,7 +30,7 @@ from .wrapper import SessionedModelWrapper
 __author__ = 'Martin Martimeo <martin@martimeo.de>'
 __date__ = '26.04.13 - 22:09'
 
-errortype = re.compile(r"INSERT INTO (\w+)")
+errortype = re.compile(r"INSERT INTO \"?(\w+)")
 
 class BaseHandler(RequestHandler):
     """
